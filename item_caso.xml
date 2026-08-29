@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:padding="16dp"
+    android:layout_marginBottom="10dp">
+
+    <TextView
+        android:id="@+id/txtEstado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DUPLICADO FUERTE"
+        android:textStyle="bold"
+        android:textColor="#9B1C1C"
+        android:textSize="12sp"/>
+
+    <TextView
+        android:id="@+id/txtAsunto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Asunto"
+        android:textStyle="bold"
+        android:textColor="#222222"
+        android:textSize="17sp"/>
+
+    <TextView
+        android:id="@+id/txtRemitente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="Remitente"
+        android:textColor="#666666"
+        android:textSize="13sp"/>
+
+    <TextView
+        android:id="@+id/txtCoincidencias"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:text="2 coincidencias"
+        android:textColor="#555555"
+        android:textSize="13sp"/>
+
+    <Button
+        android:id="@+id/btnRevisado"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="Marcar revisado"/>
+</LinearLayout>

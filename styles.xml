@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.DetectorCorreos" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#9B1C1C</item>
+        <item name="android:statusBarColor">#7F1515</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+    </style>
+</resources>

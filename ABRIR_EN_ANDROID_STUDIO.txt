@@ -1,0 +1,18 @@
+ABRIR ESTE PROYECTO EN ANDROID STUDIO
+
+1. Descomprime esta carpeta.
+2. En Android Studio:
+   File > Open
+3. Selecciona la carpeta:
+   DetectorCorreos_AndroidStudio_Project
+   (la carpeta raíz que contiene settings.gradle.kts)
+4. Espera a que termine "Gradle Sync".
+5. Si Android Studio pregunta por SDK 35 o componentes, acepta instalarlos.
+6. Después:
+   Build > Build App Bundle(s) / APK(s) > Build APK(s)
+
+APK GENERADA:
+app\build\outputs\apk\debug\app-debug.apk
+
+Esta es una app de prueba con datos locales.
+No accede todavía a Gmail ni Outlook.
