@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style
+        name="Theme.DetectorCorreos"
+        parent="android:style/Theme.Material.Light.NoActionBar">
+
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#12375F</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:statusBarColor">#0B2341</item>
+        <item name="android:navigationBarColor">#F8FBFF</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">#F4F8FC</item>
+
+    </style>
+
+</resources>
