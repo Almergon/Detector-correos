@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -64,6 +65,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.Normalizer
+import kotlin.math.abs
 
 private val Background = Color(0xFFF4F8FC)
 private val SurfaceWhite = Color(0xFFFFFFFF)
@@ -71,7 +74,6 @@ private val SurfaceSoft = Color(0xFFF8FBFF)
 private val TextPrimary = Color(0xFF10233F)
 private val TextSecondary = Color(0xFF6F8097)
 private val BorderBlue = Color(0xFFDCE6F1)
-
 private val Blue950 = Color(0xFF0B2341)
 private val Blue900 = Color(0xFF12375F)
 private val Blue800 = Color(0xFF174B7A)
@@ -79,7 +81,6 @@ private val Blue700 = Color(0xFF1F639C)
 private val Blue600 = Color(0xFF2C7BB8)
 private val Blue500 = Color(0xFF4397CB)
 private val Blue100 = Color(0xFFEAF4FB)
-
 private val Danger = Color(0xFFAD4258)
 private val DangerBackground = Color(0xFFFBECEF)
 private val Warning = Color(0xFFB17B27)
@@ -87,15 +88,9 @@ private val WarningBackground = Color(0xFFFFF5DF)
 private val Success = Color(0xFF2F7D65)
 private val SuccessBackground = Color(0xFFEAF6F1)
 
-private enum class CaseType {
-    STRONG,
-    RELATED
-}
+private enum class MatchType { STRONG, RELATED }
 
-private enum class AppSection(
-    val label: String,
-    val icon: ImageVector
-) {
+private enum class AppSection(val label: String, val icon: ImageVector) {
     SUMMARY("Resumen", Icons.Outlined.Home),
     CASES("Casos", Icons.Outlined.Email),
     SETTINGS("Ajustes", Icons.Outlined.Settings)
@@ -108,81 +103,158 @@ private enum class CaseFilter(val label: String) {
     REVIEWED("Revisados")
 }
 
-private data class MailCase(
+private data class EmailMessage(
     val id: Int,
-    val type: CaseType,
-    val sender: String,
+    val logicalSender: String,
+    val technicalSender: String,
     val subject: String,
-    val detail: String,
-    val moment: String,
-    val matches: Int
+    val contentKey: String,
+    val eventKey: String,
+    val minute: Int,
+    val moment: String
 )
 
-private val demoCases = listOf(
-    MailCase(
-        id = 1,
-        type = CaseType.STRONG,
-        sender = "Telpark",
-        subject = "Estacionamiento finalizado",
-        detail = "Se han detectado correos con el mismo remitente y el mismo asunto. Conviene revisar si ya se respondió o si son duplicados del mismo caso.",
-        moment = "Hoy · 08:12",
-        matches = 2
-    ),
-    MailCase(
-        id = 2,
-        type = CaseType.STRONG,
-        sender = "Telpark",
-        subject = "Estacionamiento próximo a finalizar",
-        detail = "Mensajes muy similares detectados dentro del periodo analizado. Posible duplicidad de aviso automático.",
-        moment = "Hoy · 07:43",
-        matches = 2
-    ),
-    MailCase(
-        id = 3,
-        type = CaseType.RELATED,
-        sender = "Comunidad / avisos",
-        subject = "URGENTE !!!",
-        detail = "Asunto repetido. Puede pertenecer al mismo hilo o a una gestión muy parecida. Revisión manual recomendada.",
-        moment = "Ayer · 18:31",
-        matches = 2
-    ),
-    MailCase(
-        id = 4,
-        type = CaseType.RELATED,
-        sender = "Educamos",
-        subject = "Nueva comunicación",
-        detail = "Caso relacionado por asunto o hilo. Revisar si existe ya una respuesta previa o un caso asociado.",
-        moment = "Ayer · 16:05",
-        matches = 2
-    )
+private data class DetectionSignal(
+    val name: String,
+    val points: Int,
+    val maximum: Int,
+    val detail: String
+) {
+    val matched: Boolean get() = points > 0
+}
+
+private data class DetectionCase(
+    val id: String,
+    val type: MatchType,
+    val first: EmailMessage,
+    val second: EmailMessage,
+    val score: Int,
+    val signals: List<DetectionSignal>,
+    val explanation: String
 )
 
-class MainActivity : ComponentActivity() {
+private val demoEmails = listOf(
+    EmailMessage(1, "Nextdoor", "reply@rs.email.es.nextdoor.com", "Me encontr茅 esta cartera con dinero hay 920鈧� en...", "nextdoor_wallet_920", "", 492, "Hoy 路 08:12"),
+    EmailMessage(2, "Nextdoor", "no-reply@is.email.es.nextdoor.com", "Me encontr茅 esta cartera con dinero hay 920鈧� en...", "nextdoor_wallet_920", "", 488, "Hoy 路 08:08"),
+    EmailMessage(3, "Telpark", "messages@telpark.com", "Telpark - Estacionamiento pr贸ximo a finalizar", "parking_session_771", "parking_771", 463, "Hoy 路 07:43"),
+    EmailMessage(4, "Telpark", "messages@telpark.com", "Estacionamiento finalizado", "parking_session_771", "parking_771", 470, "Hoy 路 07:50"),
+    EmailMessage(5, "Tienda Demo", "pedidos@tienda-demo.es", "Pedido 4582 enviado", "order_4582_sent", "order_4582", 650, "Hoy 路 10:50"),
+    EmailMessage(6, "Tienda Demo", "pedidos@tienda-demo.es", "Pedido 4582 enviado", "order_4582_sent", "order_4582", 651, "Hoy 路 10:51"),
+    EmailMessage(7, "Educamos", "avisos@educamos.com", "Novedades Educamos 01/09/2026", "educamos_daily", "educamos_news", -950, "Ayer 路 08:10"),
+    EmailMessage(8, "Educamos", "avisos@educamos.com", "Novedades Educamos 31/08/2026", "educamos_daily", "educamos_news", -2390, "Hace 2 d铆as 路 08:10"),
+    EmailMessage(9, "CaixaBank", "avisos@caixabank.es", "Nuevo extracto disponible", "bank_statement", "statement_sep", 540, "Hoy 路 09:00"),
+    EmailMessage(10, "Amazon", "shipment-tracking@amazon.es", "Tu pedido est谩 en camino", "amazon_shipment", "amazon_9301", 575, "Hoy 路 09:35"),
+    EmailMessage(11, "Google", "no-reply@accounts.google.com", "Alerta de seguridad", "google_security", "google_login", 590, "Hoy 路 09:50"),
+    EmailMessage(12, "Spotify", "no-reply@spotify.com", "Novedades de tu cuenta", "spotify_account", "spotify_account", 605, "Hoy 路 10:05"),
+    EmailMessage(13, "OSCAR", "promociones@oscar.es", "Oferta de alquiler para septiembre", "oscar_offer_sep", "", 620, "Hoy 路 10:20"),
+    EmailMessage(14, "OSCAR", "promociones@oscar.es", "脷ltimos d铆as de descuento", "oscar_discount", "", -820, "Ayer 路 10:20"),
+    EmailMessage(15, "AliExpress", "transaction@notice.aliexpress.com", "Tu pedido ha salido del almac茅n", "aliexpress_shipping", "ali_887", 635, "Hoy 路 10:35"),
+    EmailMessage(16, "Guarder铆a", "comunicaciones@guarderia-demo.es", "Men煤 semanal", "nursery_menu", "menu_week_36", 660, "Hoy 路 11:00"),
+    EmailMessage(17, "Seguro Hogar", "clientes@seguro-demo.es", "Renovaci贸n de su p贸liza", "insurance_renewal", "policy_2026", 690, "Hoy 路 11:30"),
+    EmailMessage(18, "Bolet铆n Tecnolog铆a", "newsletter@tecnologia-demo.es", "Resumen semanal de tecnolog铆a", "tech_newsletter", "tech_week_36", 720, "Hoy 路 12:00")
+)
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContent {
-            DetectorTheme {
-                DetectorApp()
+private object DetectionEngine {
+    fun detect(emails: List<EmailMessage>): List<DetectionCase> {
+        val cases = mutableListOf<DetectionCase>()
+        for (leftIndex in emails.indices) {
+            for (rightIndex in leftIndex + 1 until emails.size) {
+                compare(emails[leftIndex], emails[rightIndex])?.let(cases::add)
             }
         }
+        return cases.sortedByDescending { it.score }
+    }
+
+    private fun compare(first: EmailMessage, second: EmailMessage): DetectionCase? {
+        val exactTechnicalSender = first.technicalSender.equals(second.technicalSender, true)
+        val sameLogicalSender = first.logicalSender.equals(second.logicalSender, true)
+        val firstSubject = normalize(first.subject)
+        val secondSubject = normalize(second.subject)
+        val exactSubject = firstSubject == secondSubject
+        val similarSubject = !exactSubject && similarity(firstSubject, secondSubject) >= 0.45
+        val sameContent = first.contentKey.isNotBlank() && first.contentKey == second.contentKey
+        val sameEvent = first.eventKey.isNotBlank() && first.eventKey == second.eventKey
+        val minuteDistance = abs(first.minute - second.minute)
+
+        val signals = listOf(
+            DetectionSignal(
+                "Remitente",
+                when { exactTechnicalSender -> 20; sameLogicalSender -> 12; else -> 0 },
+                20,
+                when { exactTechnicalSender -> "Misma direcci贸n t茅cnica"; sameLogicalSender -> "Mismo emisor l贸gico con direcciones t茅cnicas distintas"; else -> "Remitentes distintos" }
+            ),
+            DetectionSignal(
+                "Asunto",
+                when { exactSubject -> 30; similarSubject -> 15; else -> 0 },
+                30,
+                when { exactSubject -> "Asunto normalizado id茅ntico"; similarSubject -> "Asuntos parcialmente similares"; else -> "Asuntos diferentes" }
+            ),
+            DetectionSignal("Contenido", if (sameContent) 20 else 0, 20, if (sameContent) "Mismo contenido o plantilla" else "Contenido diferente"),
+            DetectionSignal("Evento o hilo", if (sameEvent) 20 else 0, 20, if (sameEvent) "Mismo evento, operaci贸n o serie" else "Sin evento com煤n identificado"),
+            DetectionSignal(
+                "Proximidad temporal",
+                when { minuteDistance <= 15 -> 10; minuteDistance <= 1_440 -> 5; else -> 0 },
+                10,
+                when { minuteDistance <= 15 -> "Separados por $minuteDistance minutos"; minuteDistance <= 1_440 -> "Recibidos dentro de 24 horas"; else -> "Fuera de la ventana temporal" }
+            )
+        )
+
+        val score = signals.sumOf { it.points }
+        val type = when {
+            exactTechnicalSender && exactSubject && score >= 70 -> MatchType.STRONG
+            score >= 45 -> MatchType.RELATED
+            else -> return null
+        }
+        val reasons = signals.filter { it.matched }.joinToString(", ") { it.name.lowercase() }
+        return DetectionCase(
+            id = "${minOf(first.id, second.id)}_${maxOf(first.id, second.id)}",
+            type = type,
+            first = first,
+            second = second,
+            score = score,
+            signals = signals,
+            explanation = if (type == MatchType.STRONG) {
+                "Duplicado fuerte: coincide la direcci贸n t茅cnica, el asunto normalizado y otras se帽ales ($reasons)."
+            } else {
+                "Correos relacionados por $reasons. Requieren revisi贸n antes de tratarlos como duplicados."
+            }
+        )
+    }
+
+    private fun normalize(value: String): String = Normalizer.normalize(value.lowercase(), Normalizer.Form.NFD)
+        .replace(Regex("\\p{M}+"), "")
+        .replace(Regex("[^a-z0-9 ]"), " ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
+    private fun similarity(first: String, second: String): Double {
+        val a = first.split(" ").filter { it.length > 2 }.toSet()
+        val b = second.split(" ").filter { it.length > 2 }.toSet()
+        if (a.isEmpty() || b.isEmpty()) return 0.0
+        return a.intersect(b).size.toDouble() / a.union(b).size.toDouble()
+    }
+}
+
+private val detectedCases = DetectionEngine.detect(demoEmails)
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent { DetectorTheme { DetectorApp() } }
     }
 }
 
 @Composable
 private fun DetectorTheme(content: @Composable () -> Unit) {
-    val colors = lightColorScheme(
-        primary = Blue900,
-        onPrimary = Color.White,
-        secondary = Blue700,
-        background = Background,
-        surface = SurfaceWhite,
-        onSurface = TextPrimary
-    )
-
     MaterialTheme(
-        colorScheme = colors,
+        colorScheme = lightColorScheme(
+            primary = Blue900,
+            onPrimary = Color.White,
+            secondary = Blue700,
+            background = Background,
+            surface = SurfaceWhite,
+            onSurface = TextPrimary
+        ),
         content = content
     )
 }
@@ -191,605 +263,261 @@ private fun DetectorTheme(content: @Composable () -> Unit) {
 @Composable
 private fun DetectorApp() {
     val context = androidx.compose.ui.platform.LocalContext.current
-
-    val preferences = remember {
-        context.getSharedPreferences(
-            "detector_correos",
-            Context.MODE_PRIVATE
-        )
-    }
-
-    val reviewedCases = remember {
-        mutableStateMapOf<Int, Boolean>().apply {
-            demoCases.forEach { case ->
-                val currentKey = "reviewed_${case.id}"
-                val oldKey = "revisado_${case.id}"
-
+    val preferences = remember { context.getSharedPreferences("detector_correos", Context.MODE_PRIVATE) }
+    val reviewed = remember {
+        mutableStateMapOf<String, Boolean>().apply {
+            detectedCases.forEachIndexed { index, case ->
+                val newKey = "reviewed_case_${case.id}"
                 this[case.id] = when {
-                    preferences.contains(currentKey) ->
-                        preferences.getBoolean(currentKey, false)
-
-                    preferences.contains(oldKey) ->
-                        preferences.getBoolean(oldKey, false)
-
+                    preferences.contains(newKey) -> preferences.getBoolean(newKey, false)
+                    preferences.contains("reviewed_${index + 1}") -> preferences.getBoolean("reviewed_${index + 1}", false)
+                    preferences.contains("revisado_${index + 1}") -> preferences.getBoolean("revisado_${index + 1}", false)
                     else -> false
                 }
             }
         }
     }
-
-    var currentSection by remember {
-        mutableStateOf(AppSection.SUMMARY)
-    }
-
-    var currentFilter by remember {
-        mutableStateOf(CaseFilter.ALL)
-    }
-
-    var selectedCase by remember {
-        mutableStateOf<MailCase?>(null)
-    }
-
-    fun changeReviewedState(case: MailCase) {
-        val newValue = !(reviewedCases[case.id] ?: false)
-
-        reviewedCases[case.id] = newValue
-
-        // Conservamos las dos claves para migrar versiones anteriores.
-        preferences.edit()
-            .putBoolean("reviewed_${case.id}", newValue)
-            .putBoolean("revisado_${case.id}", newValue)
-            .apply()
-    }
+    var section by remember { mutableStateOf(AppSection.SUMMARY) }
+    var filter by remember { mutableStateOf(CaseFilter.ALL) }
+    var selected by remember { mutableStateOf<DetectionCase?>(null) }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF8FBFE),
-                        Color(0xFFF2F6FB)
-                    )
-                )
-            )
+        Modifier.fillMaxSize().background(
+            Brush.verticalGradient(listOf(Color(0xFFF8FBFE), Color(0xFFF2F6FB)))
+        )
     ) {
         Scaffold(
             containerColor = Color.Transparent,
-            bottomBar = {
-                DetectorBottomNavigation(
-                    currentSection = currentSection,
-                    onSectionSelected = {
-                        currentSection = it
-                    }
-                )
-            }
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                DetectorHeader()
-
-                when (currentSection) {
-                    AppSection.SUMMARY -> SummaryScreen(
-                        reviewedCases = reviewedCases,
-                        onCaseSelected = { selectedCase = it },
-                        onViewAll = { currentSection = AppSection.CASES }
-                    )
-
-                    AppSection.CASES -> CasesScreen(
-                        reviewedCases = reviewedCases,
-                        currentFilter = currentFilter,
-                        onFilterSelected = { currentFilter = it },
-                        onCaseSelected = { selectedCase = it }
-                    )
-
+            bottomBar = { BottomNavigation(section) { section = it } }
+        ) { padding ->
+            Column(Modifier.fillMaxSize().padding(padding)) {
+                Header()
+                when (section) {
+                    AppSection.SUMMARY -> SummaryScreen(reviewed, { selected = it }) { section = AppSection.CASES }
+                    AppSection.CASES -> CasesScreen(reviewed, filter, { filter = it }) { selected = it }
                     AppSection.SETTINGS -> SettingsScreen()
                 }
             }
         }
     }
 
-    selectedCase?.let { case ->
-        CaseDetailSheet(
+    selected?.let { case ->
+        DetailSheet(
             case = case,
-            reviewed = reviewedCases[case.id] ?: false,
-            onDismiss = { selectedCase = null },
-            onToggleReviewed = {
-                changeReviewedState(case)
-                selectedCase = null
+            reviewed = reviewed[case.id] == true,
+            onDismiss = { selected = null },
+            onToggle = {
+                val value = reviewed[case.id] != true
+                reviewed[case.id] = value
+                preferences.edit().putBoolean("reviewed_case_${case.id}", value).apply()
+                selected = null
             }
         )
     }
 }
 
 @Composable
-private fun DetectorHeader() {
+private fun Header() {
     Box(
-        modifier = Modifier
-            .padding(
-                start = 18.dp,
-                top = 14.dp,
-                end = 18.dp,
-                bottom = 10.dp
-            )
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        Blue950,
-                        Blue800,
-                        Blue600
-                    )
-                )
-            )
+        Modifier.padding(start = 18.dp, top = 14.dp, end = 18.dp, bottom = 10.dp)
+            .fillMaxWidth().clip(RoundedCornerShape(24.dp))
+            .background(Brush.linearGradient(listOf(Blue950, Blue800, Blue600)))
     ) {
         Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = 42.dp, y = (-42).dp)
-                .size(145.dp)
-                .background(
-                    color = Color.White.copy(alpha = 0.08f),
-                    shape = CircleShape
-                )
+            Modifier.align(Alignment.TopEnd).offset(x = 42.dp, y = (-42).dp).size(145.dp)
+                .background(Color.White.copy(alpha = 0.08f), CircleShape)
         )
-
-        Column(
-            modifier = Modifier.padding(
-                horizontal = 18.dp,
-                vertical = 17.dp
-            )
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(7.dp)
-                        .background(
-                            color = Color(0xFF7FD4FF),
-                            shape = CircleShape
-                        )
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = "MONITORIZACIÓN ACTIVA",
-                    color = Color(0xFFC8E4F6),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.8.sp
-                )
+        Column(Modifier.padding(horizontal = 18.dp, vertical = 17.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(7.dp).background(Color(0xFF7FD4FF), CircleShape))
+                Spacer(Modifier.width(8.dp))
+                Text("DETECCI脫N LOCAL ACTIVA", color = Color(0xFFC8E4F6), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp)
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Detector de correos",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "Última revisión · Hoy 08:00",
-                color = Color(0xFFD6E9F7),
-                fontSize = 12.sp
-            )
+            Spacer(Modifier.height(8.dp))
+            Text("Detector de correos", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text("v0.7 路 ${demoEmails.size} correos de demostraci贸n", color = Color(0xFFD6E9F7), fontSize = 12.sp)
         }
     }
 }
 
 @Composable
-private fun SummaryScreen(
-    reviewedCases: SnapshotStateMap<Int, Boolean>,
-    onCaseSelected: (MailCase) -> Unit,
-    onViewAll: () -> Unit
-) {
+private fun SummaryScreen(reviewed: SnapshotStateMap<String, Boolean>, onCase: (DetectionCase) -> Unit, onAll: () -> Unit) {
+    val strong = detectedCases.count { it.type == MatchType.STRONG }
+    val related = detectedCases.count { it.type == MatchType.RELATED }
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 18.dp,
-            end = 18.dp,
-            bottom = 22.dp
-        ),
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
-            KpiRow()
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(3.dp))
-
-            SectionHeader(
-                title = "Casos recientes",
-                subtitle = "Prioridad de revisión",
-                actionText = "Ver todos",
-                onAction = onViewAll
-            )
-        }
-
-        items(
-            items = demoCases.take(3),
-            key = { it.id }
-        ) { case ->
-            CaseCard(
-                case = case,
-                reviewed = reviewedCases[case.id] ?: false,
-                compact = true,
-                onClick = { onCaseSelected(case) }
-            )
+        item { KpiRow(demoEmails.size, strong, related) }
+        item { SectionHeader("Casos recientes", "Ordenados por puntuaci贸n", "Ver todos", onAll) }
+        items(detectedCases.take(3), key = { it.id }) { case ->
+            CaseCard(case, reviewed[case.id] == true, true) { onCase(case) }
         }
     }
 }
 
 @Composable
 private fun CasesScreen(
-    reviewedCases: SnapshotStateMap<Int, Boolean>,
-    currentFilter: CaseFilter,
-    onFilterSelected: (CaseFilter) -> Unit,
-    onCaseSelected: (MailCase) -> Unit
+    reviewed: SnapshotStateMap<String, Boolean>,
+    filter: CaseFilter,
+    onFilter: (CaseFilter) -> Unit,
+    onCase: (DetectionCase) -> Unit
 ) {
-    val filteredCases = when (currentFilter) {
-        CaseFilter.ALL -> demoCases
-
-        CaseFilter.STRONG ->
-            demoCases.filter { it.type == CaseType.STRONG }
-
-        CaseFilter.RELATED ->
-            demoCases.filter { it.type == CaseType.RELATED }
-
-        CaseFilter.REVIEWED ->
-            demoCases.filter { reviewedCases[it.id] == true }
+    val visible = when (filter) {
+        CaseFilter.ALL -> detectedCases
+        CaseFilter.STRONG -> detectedCases.filter { it.type == MatchType.STRONG }
+        CaseFilter.RELATED -> detectedCases.filter { it.type == MatchType.RELATED }
+        CaseFilter.REVIEWED -> detectedCases.filter { reviewed[it.id] == true }
     }
-
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 18.dp,
-            end = 18.dp,
-            bottom = 22.dp
-        ),
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
-            SectionHeader(
-                title = "Bandeja de revisión",
-                subtitle = "${filteredCases.size} casos visibles"
-            )
-        }
-
-        item {
-            FilterRow(
-                selectedFilter = currentFilter,
-                onFilterSelected = onFilterSelected
-            )
-        }
-
-        if (filteredCases.isEmpty()) {
-            item {
-                EmptyCard()
-            }
-        } else {
-            items(
-                items = filteredCases,
-                key = { it.id }
-            ) { case ->
-                CaseCard(
-                    case = case,
-                    reviewed = reviewedCases[case.id] ?: false,
-                    compact = false,
-                    onClick = { onCaseSelected(case) }
-                )
-            }
-        }
+        item { SectionHeader("Bandeja de revisi贸n", "${visible.size} casos visibles") }
+        item { FilterRow(filter, onFilter) }
+        if (visible.isEmpty()) item { EmptyCard() }
+        else items(visible, key = { it.id }) { case -> CaseCard(case, reviewed[case.id] == true, false) { onCase(case) } }
     }
 }
 
 @Composable
 private fun SettingsScreen() {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 18.dp,
-            end = 18.dp,
-            bottom = 22.dp
-        ),
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        item {
-            SectionHeader(
-                title = "Ajustes",
-                subtitle = "Configuración del detector"
-            )
-        }
+        item { SectionHeader("Ajustes", "Configuraci贸n del detector") }
+        item { InfoCard("Versi贸n", "Detector de correos v0.7 operativa. Interfaz Android creada con Jetpack Compose.") }
+        item { InfoCard("Motor de detecci贸n", "Compara cada pareja mediante cinco se帽ales: remitente, asunto, contenido, evento o hilo y proximidad temporal.") }
+        item { InfoCard("Privacidad", "Los 18 mensajes son simulados. Esta versi贸n no accede a Gmail, Outlook ni a buzones corporativos.") }
+        item { InfoCard("Pr贸xima integraci贸n", "El motor local queda preparado para sustituir los datos simulados por mensajes obtenidos mediante una conexi贸n autorizada.") }
+    }
+}
 
-        item {
-            InformationCard(
-                title = "Versión actual",
-                body = "Detector de correos v0.5. Interfaz desarrollada con Jetpack Compose."
-            )
-        }
+@Composable
+private fun KpiRow(analyzed: Int, strong: Int, related: Int) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        KpiCard(analyzed.toString(), "Analizados", Modifier.weight(1f))
+        KpiCard(strong.toString(), "Duplicados", Modifier.weight(1f))
+        KpiCard(related.toString(), "Relacionados", Modifier.weight(1f))
+    }
+}
 
-        item {
-            InformationCard(
-                title = "Origen de datos",
-                body = "Esta versión utiliza datos simulados. La conexión con Gmail y la adaptación a Outlook/Exchange se incorporarán más adelante."
-            )
-        }
-
-        item {
-            InformationCard(
-                title = "Estado de la detección",
-                body = "Los filtros, el detalle de casos y el estado revisado funcionan localmente en el dispositivo."
-            )
+@Composable
+private fun KpiCard(number: String, label: String, modifier: Modifier) {
+    Surface(modifier, color = SurfaceWhite.copy(alpha = 0.92f), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, BorderBlue), shadowElevation = 2.dp) {
+        Column(Modifier.padding(horizontal = 8.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(number, color = Blue900, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.height(4.dp))
+            Text(label, color = TextSecondary, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
 
 @Composable
-private fun KpiRow() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        KpiCard(
-            number = "38",
-            label = "Analizados",
-            modifier = Modifier.weight(1f)
-        )
-
-        KpiCard(
-            number = "4",
-            label = "Duplicados",
-            modifier = Modifier.weight(1f)
-        )
-
-        KpiCard(
-            number = "6",
-            label = "Relacionados",
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun KpiCard(
-    number: String,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        color = SurfaceWhite.copy(alpha = 0.92f),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, BorderBlue),
-        shadowElevation = 2.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(
-                horizontal = 8.dp,
-                vertical = 12.dp
-            ),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = number,
-                color = Blue900,
-                fontSize = 21.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = label,
-                color = TextSecondary,
-                fontSize = 10.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun SectionHeader(
-    title: String,
-    subtitle: String,
-    actionText: String? = null,
-    onAction: (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+private fun SectionHeader(title: String, subtitle: String, action: String? = null, onAction: (() -> Unit)? = null) {
+    Row(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
         Column {
-            Text(
-                text = title,
-                color = Blue950,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Text(
-                text = subtitle,
-                color = TextSecondary,
-                fontSize = 11.sp
-            )
+            Text(title, color = Blue950, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+            Text(subtitle, color = TextSecondary, fontSize = 11.sp)
         }
-
-        if (actionText != null && onAction != null) {
-            Text(
-                text = actionText,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable(onClick = onAction)
-                    .padding(horizontal = 5.dp, vertical = 5.dp),
-                color = Blue700,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
+        if (action != null && onAction != null) {
+            Text(action, Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onAction).padding(5.dp), color = Blue700, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
         }
     }
 }
 
 @Composable
-private fun FilterRow(
-    selectedFilter: CaseFilter,
-    onFilterSelected: (CaseFilter) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(7.dp)
-    ) {
+private fun FilterRow(selected: CaseFilter, onSelected: (CaseFilter) -> Unit) {
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         CaseFilter.entries.forEach { filter ->
-            FilterPill(
-                label = filter.label,
-                selected = selectedFilter == filter,
-                onClick = { onFilterSelected(filter) }
-            )
+            Surface(
+                Modifier.clickable { onSelected(filter) },
+                color = if (selected == filter) Blue900 else SurfaceWhite,
+                contentColor = if (selected == filter) Color.White else Color(0xFF50647E),
+                shape = RoundedCornerShape(50),
+                border = BorderStroke(1.dp, if (selected == filter) Blue800 else BorderBlue)
+            ) {
+                Text(filter.label, Modifier.padding(horizontal = 12.dp, vertical = 8.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
 
 @Composable
-private fun FilterPill(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
+private fun CaseCard(case: DetectionCase, reviewed: Boolean, compact: Boolean, onClick: () -> Unit) {
     Surface(
-        modifier = Modifier.clickable(onClick = onClick),
-        color = if (selected) Blue900 else SurfaceWhite.copy(alpha = 0.9f),
-        contentColor = if (selected) Color.White else Color(0xFF50647E),
-        shape = RoundedCornerShape(50),
-        border = if (selected) {
-            BorderStroke(1.dp, Blue800)
-        } else {
-            BorderStroke(1.dp, BorderBlue)
-        },
-        shadowElevation = if (selected) 3.dp else 0.dp
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(
-                horizontal = 12.dp,
-                vertical = 8.dp
-            ),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun CaseCard(
-    case: MailCase,
-    reviewed: Boolean,
-    compact: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        Modifier.fillMaxWidth().clickable(onClick = onClick),
         color = SurfaceWhite.copy(alpha = 0.95f),
         shape = RoundedCornerShape(17.dp),
         border = BorderStroke(1.dp, BorderBlue),
         shadowElevation = 2.dp
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(3.dp)
-                    .fillMaxHeight()
-                    .background(Blue500.copy(alpha = 0.7f))
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(
-                        start = 12.dp,
-                        top = 12.dp,
-                        end = 14.dp,
-                        bottom = 12.dp
-                    )
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    StatusBadge(
-                        case = case,
-                        reviewed = reviewed
-                    )
-
-                    Text(
-                        text = "${case.matches} coincidencias",
-                        color = Color(0xFF8492A5),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            Box(Modifier.width(3.dp).fillMaxHeight().background(Blue500.copy(alpha = 0.7f)))
+            Column(Modifier.weight(1f).padding(start = 12.dp, top = 12.dp, end = 14.dp, bottom = 12.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    StatusBadge(case.type, reviewed)
+                    Text("${case.score}/100", color = Blue700, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                 }
+                Spacer(Modifier.height(8.dp))
+                Text(case.first.logicalSender, color = Blue700, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(2.dp))
+                Text(case.first.subject, color = Blue950, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text("鈫� ${case.second.subject}", color = TextSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(7.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("2 correos", color = Color(0xFF8795A7), fontSize = 10.sp)
+                    if (!compact) Text(if (reviewed) "Revisado" else "Ver explicaci贸n", color = if (reviewed) Success else TextSecondary, fontSize = 10.sp)
+                }
+            }
+        }
+    }
+}
 
-                Spacer(modifier = Modifier.height(8.dp))
+@Composable
+private fun StatusBadge(type: MatchType, reviewed: Boolean) {
+    val label: String
+    val foreground: Color
+    val background: Color
+    when {
+        reviewed -> { label = "REVISADO"; foreground = Success; background = SuccessBackground }
+        type == MatchType.STRONG -> { label = "DUPLICADO"; foreground = Danger; background = DangerBackground }
+        else -> { label = "RELACIONADO"; foreground = Warning; background = WarningBackground }
+    }
+    Text(label, Modifier.background(background, RoundedCornerShape(50)).padding(horizontal = 9.dp, vertical = 5.dp), color = foreground, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.4.sp)
+}
 
-                Text(
-                    text = case.sender,
-                    color = Blue700,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = case.subject,
-                    color = Blue950,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(7.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = case.moment,
-                        color = Color(0xFF8795A7),
-                        fontSize = 10.sp
-                    )
-
-                    if (!compact) {
-                        Text(
-                            text = if (reviewed) "Revisado" else "Abrir detalle",
-                            color = if (reviewed) Success else TextSecondary,
-                            fontSize = 10.sp
-                        )
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DetailSheet(case: DetectionCase, reviewed: Boolean, onDismiss: () -> Unit, onToggle: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFFFBFDFF), shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp), dragHandle = null) {
+        LazyColumn(
+            Modifier.fillMaxWidth().heightIn(max = 680.dp),
+            contentPadding = PaddingValues(start = 20.dp, top = 22.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    StatusBadge(case.type, reviewed)
+                    Text("Confianza ${case.score}/100", color = Blue700, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                }
+            }
+            item { Text(case.explanation, color = Blue950, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold) }
+            item { EmailBlock("Correo 1", case.first) }
+            item { EmailBlock("Correo 2", case.second) }
+            item { HorizontalDivider(color = BorderBlue) }
+            item { Text("Cinco se帽ales analizadas", color = Blue900, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold) }
+            items(case.signals) { signal -> SignalRow(signal) }
+            item {
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    OutlinedButton(onDismiss, Modifier.weight(1f), shape = RoundedCornerShape(13.dp), border = BorderStroke(1.dp, BorderBlue)) { Text("Cerrar") }
+                    Button(onToggle, Modifier.weight(1f), shape = RoundedCornerShape(13.dp), colors = ButtonDefaults.buttonColors(containerColor = Blue900)) {
+                        Text(if (reviewed) "Marcar pendiente" else "Marcar revisado", fontSize = 11.sp)
                     }
                 }
             }
@@ -798,254 +526,55 @@ private fun CaseCard(
 }
 
 @Composable
-private fun StatusBadge(
-    case: MailCase,
-    reviewed: Boolean
-) {
-    val label: String
-    val foreground: Color
-    val background: Color
-
-    when {
-        reviewed -> {
-            label = "REVISADO"
-            foreground = Success
-            background = SuccessBackground
-        }
-
-        case.type == CaseType.STRONG -> {
-            label = "DUPLICADO"
-            foreground = Danger
-            background = DangerBackground
-        }
-
-        else -> {
-            label = "RELACIONADO"
-            foreground = Warning
-            background = WarningBackground
-        }
-    }
-
-    Text(
-        text = label,
-        modifier = Modifier
-            .background(
-                color = background,
-                shape = RoundedCornerShape(50)
-            )
-            .padding(
-                horizontal = 9.dp,
-                vertical = 5.dp
-            ),
-        color = foreground,
-        fontSize = 9.sp,
-        fontWeight = FontWeight.ExtraBold,
-        letterSpacing = 0.4.sp
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CaseDetailSheet(
-    case: MailCase,
-    reviewed: Boolean,
-    onDismiss: () -> Unit,
-    onToggleReviewed: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFFFBFDFF),
-        shape = RoundedCornerShape(
-            topStart = 26.dp,
-            topEnd = 26.dp
-        ),
-        dragHandle = null
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 650.dp)
-                .padding(
-                    start = 20.dp,
-                    top = 22.dp,
-                    end = 20.dp,
-                    bottom = 24.dp
-                )
-        ) {
-            StatusBadge(
-                case = case,
-                reviewed = reviewed
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = case.subject,
-                color = Blue950,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            DetailLine(
-                label = "Remitente",
-                value = case.sender
-            )
-
-            DetailLine(
-                label = "Fecha",
-                value = case.moment
-            )
-
-            DetailLine(
-                label = "Coincidencias detectadas",
-                value = case.matches.toString()
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            HorizontalDivider(color = BorderBlue)
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = case.detail,
-                color = Color(0xFF33475F),
-                fontSize = 13.sp,
-                lineHeight = 20.sp
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(9.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(13.dp),
-                    border = BorderStroke(1.dp, BorderBlue)
-                ) {
-                    Text("Cerrar")
-                }
-
-                Button(
-                    onClick = onToggleReviewed,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(13.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Blue900,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(
-                        text = if (reviewed) {
-                            "Marcar pendiente"
-                        } else {
-                            "Marcar revisado"
-                        },
-                        fontSize = 12.sp
-                    )
-                }
-            }
+private fun EmailBlock(title: String, email: EmailMessage) {
+    Surface(Modifier.fillMaxWidth(), color = Blue100.copy(alpha = 0.65f), shape = RoundedCornerShape(14.dp)) {
+        Column(Modifier.padding(12.dp)) {
+            Text(title, color = Blue700, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+            Text(email.subject, color = Blue950, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(email.technicalSender, color = TextSecondary, fontSize = 10.sp)
+            Text(email.moment, color = TextSecondary, fontSize = 10.sp)
         }
     }
 }
 
 @Composable
-private fun DetailLine(
-    label: String,
-    value: String
-) {
-    Text(
-        text = "$label: $value",
-        color = TextSecondary,
-        fontSize = 12.sp,
-        lineHeight = 19.sp
-    )
+private fun SignalRow(signal: DetectionSignal) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+        Column(Modifier.weight(1f)) {
+            Text((if (signal.matched) "鉁� " else "鈥� ") + signal.name, color = if (signal.matched) Success else TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(signal.detail, color = TextSecondary, fontSize = 10.sp)
+        }
+        Text("${signal.points}/${signal.maximum}", color = if (signal.matched) Blue700 else TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+    }
 }
 
 @Composable
-private fun InformationCard(
-    title: String,
-    body: String
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = SurfaceWhite.copy(alpha = 0.94f),
-        shape = RoundedCornerShape(17.dp),
-        border = BorderStroke(1.dp, BorderBlue),
-        shadowElevation = 2.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(15.dp)
-        ) {
-            Text(
-                text = title,
-                color = Blue900,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = body,
-                color = Color(0xFF5F7188),
-                fontSize = 12.sp,
-                lineHeight = 18.sp
-            )
+private fun InfoCard(title: String, body: String) {
+    Surface(Modifier.fillMaxWidth(), color = SurfaceWhite.copy(alpha = 0.94f), shape = RoundedCornerShape(17.dp), border = BorderStroke(1.dp, BorderBlue), shadowElevation = 2.dp) {
+        Column(Modifier.padding(15.dp)) {
+            Text(title, color = Blue900, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.height(6.dp))
+            Text(body, color = Color(0xFF5F7188), fontSize = 12.sp, lineHeight = 18.sp)
         }
     }
 }
 
 @Composable
 private fun EmptyCard() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = SurfaceWhite.copy(alpha = 0.9f),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, BorderBlue)
-    ) {
-        Text(
-            text = "No hay casos para este filtro.",
-            modifier = Modifier.padding(22.dp),
-            color = TextSecondary,
-            fontSize = 12.sp
-        )
+    Surface(Modifier.fillMaxWidth(), color = SurfaceWhite, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, BorderBlue)) {
+        Text("No hay casos para este filtro.", Modifier.padding(22.dp), color = TextSecondary, fontSize = 12.sp)
     }
 }
 
 @Composable
-private fun DetectorBottomNavigation(
-    currentSection: AppSection,
-    onSectionSelected: (AppSection) -> Unit
-) {
-    NavigationBar(
-        containerColor = SurfaceSoft.copy(alpha = 0.98f),
-        tonalElevation = 6.dp
-    ) {
+private fun BottomNavigation(current: AppSection, onSelected: (AppSection) -> Unit) {
+    NavigationBar(containerColor = SurfaceSoft.copy(alpha = 0.98f), tonalElevation = 6.dp) {
         AppSection.entries.forEach { section ->
-            val selected = currentSection == section
-
             NavigationBarItem(
-                selected = selected,
-                onClick = { onSectionSelected(section) },
-                icon = {
-                    Icon(
-                        imageVector = section.icon,
-                        contentDescription = section.label
-                    )
-                },
-                label = {
-                    Text(
-                        text = section.label,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                selected = current == section,
+                onClick = { onSelected(section) },
+                icon = { Icon(section.icon, contentDescription = section.label) },
+                label = { Text(section.label, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Blue800,
                     selectedTextColor = Blue800,
