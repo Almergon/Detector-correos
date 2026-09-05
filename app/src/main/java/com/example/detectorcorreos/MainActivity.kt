@@ -32,7 +32,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,9 +42,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -134,24 +133,24 @@ private data class DetectionCase(
 )
 
 private val demoEmails = listOf(
-    EmailMessage(1, "Nextdoor", "reply@rs.email.es.nextdoor.com", "Me encontr茅 esta cartera con dinero hay 920鈧� en...", "nextdoor_wallet_920", "", 492, "Hoy 路 08:12"),
-    EmailMessage(2, "Nextdoor", "no-reply@is.email.es.nextdoor.com", "Me encontr茅 esta cartera con dinero hay 920鈧� en...", "nextdoor_wallet_920", "", 488, "Hoy 路 08:08"),
-    EmailMessage(3, "Telpark", "messages@telpark.com", "Telpark - Estacionamiento pr贸ximo a finalizar", "parking_session_771", "parking_771", 463, "Hoy 路 07:43"),
-    EmailMessage(4, "Telpark", "messages@telpark.com", "Estacionamiento finalizado", "parking_session_771", "parking_771", 470, "Hoy 路 07:50"),
-    EmailMessage(5, "Tienda Demo", "pedidos@tienda-demo.es", "Pedido 4582 enviado", "order_4582_sent", "order_4582", 650, "Hoy 路 10:50"),
-    EmailMessage(6, "Tienda Demo", "pedidos@tienda-demo.es", "Pedido 4582 enviado", "order_4582_sent", "order_4582", 651, "Hoy 路 10:51"),
-    EmailMessage(7, "Educamos", "avisos@educamos.com", "Novedades Educamos 01/09/2026", "educamos_daily", "educamos_news", -950, "Ayer 路 08:10"),
-    EmailMessage(8, "Educamos", "avisos@educamos.com", "Novedades Educamos 31/08/2026", "educamos_daily", "educamos_news", -2390, "Hace 2 d铆as 路 08:10"),
-    EmailMessage(9, "CaixaBank", "avisos@caixabank.es", "Nuevo extracto disponible", "bank_statement", "statement_sep", 540, "Hoy 路 09:00"),
-    EmailMessage(10, "Amazon", "shipment-tracking@amazon.es", "Tu pedido est谩 en camino", "amazon_shipment", "amazon_9301", 575, "Hoy 路 09:35"),
-    EmailMessage(11, "Google", "no-reply@accounts.google.com", "Alerta de seguridad", "google_security", "google_login", 590, "Hoy 路 09:50"),
-    EmailMessage(12, "Spotify", "no-reply@spotify.com", "Novedades de tu cuenta", "spotify_account", "spotify_account", 605, "Hoy 路 10:05"),
-    EmailMessage(13, "OSCAR", "promociones@oscar.es", "Oferta de alquiler para septiembre", "oscar_offer_sep", "", 620, "Hoy 路 10:20"),
-    EmailMessage(14, "OSCAR", "promociones@oscar.es", "脷ltimos d铆as de descuento", "oscar_discount", "", -820, "Ayer 路 10:20"),
-    EmailMessage(15, "AliExpress", "transaction@notice.aliexpress.com", "Tu pedido ha salido del almac茅n", "aliexpress_shipping", "ali_887", 635, "Hoy 路 10:35"),
-    EmailMessage(16, "Guarder铆a", "comunicaciones@guarderia-demo.es", "Men煤 semanal", "nursery_menu", "menu_week_36", 660, "Hoy 路 11:00"),
-    EmailMessage(17, "Seguro Hogar", "clientes@seguro-demo.es", "Renovaci贸n de su p贸liza", "insurance_renewal", "policy_2026", 690, "Hoy 路 11:30"),
-    EmailMessage(18, "Bolet铆n Tecnolog铆a", "newsletter@tecnologia-demo.es", "Resumen semanal de tecnolog铆a", "tech_newsletter", "tech_week_36", 720, "Hoy 路 12:00")
+    EmailMessage(1, "Nextdoor", "reply@rs.email.es.nextdoor.com", "Me encontr\u00E9 esta cartera con dinero hay 920\u20AC en...", "nextdoor_wallet_920", "", 492, "Hoy \u00B7 08:12"),
+    EmailMessage(2, "Nextdoor", "no-reply@is.email.es.nextdoor.com", "Me encontr\u00E9 esta cartera con dinero hay 920\u20AC en...", "nextdoor_wallet_920", "", 488, "Hoy \u00B7 08:08"),
+    EmailMessage(3, "Telpark", "messages@telpark.com", "Telpark - Estacionamiento pr\u00F3ximo a finalizar", "parking_session_771", "parking_771", 463, "Hoy \u00B7 07:43"),
+    EmailMessage(4, "Telpark", "messages@telpark.com", "Estacionamiento finalizado", "parking_session_771", "parking_771", 470, "Hoy \u00B7 07:50"),
+    EmailMessage(5, "Tienda Demo", "pedidos@tienda-demo.es", "Pedido 4582 enviado", "order_4582_sent", "order_4582", 650, "Hoy \u00B7 10:50"),
+    EmailMessage(6, "Tienda Demo", "pedidos@tienda-demo.es", "Pedido 4582 enviado", "order_4582_sent", "order_4582", 651, "Hoy \u00B7 10:51"),
+    EmailMessage(7, "Educamos", "avisos@educamos.com", "Novedades Educamos 01/09/2026", "educamos_daily", "educamos_news", -950, "Ayer \u00B7 08:10"),
+    EmailMessage(8, "Educamos", "avisos@educamos.com", "Novedades Educamos 31/08/2026", "educamos_daily", "educamos_news", -2390, "Hace 2 d\u00EDas \u00B7 08:10"),
+    EmailMessage(9, "CaixaBank", "avisos@caixabank.es", "Nuevo extracto disponible", "bank_statement", "statement_sep", 540, "Hoy \u00B7 09:00"),
+    EmailMessage(10, "Amazon", "shipment-tracking@amazon.es", "Tu pedido est\u00E1 en camino", "amazon_shipment", "amazon_9301", 575, "Hoy \u00B7 09:35"),
+    EmailMessage(11, "Google", "no-reply@accounts.google.com", "Alerta de seguridad", "google_security", "google_login", 590, "Hoy \u00B7 09:50"),
+    EmailMessage(12, "Spotify", "no-reply@spotify.com", "Novedades de tu cuenta", "spotify_account", "spotify_account", 605, "Hoy \u00B7 10:05"),
+    EmailMessage(13, "OSCAR", "promociones@oscar.es", "Oferta de alquiler para septiembre", "oscar_offer_sep", "", 620, "Hoy \u00B7 10:20"),
+    EmailMessage(14, "OSCAR", "promociones@oscar.es", "\u00DAltimos d\u00EDas de descuento", "oscar_discount", "", -820, "Ayer \u00B7 10:20"),
+    EmailMessage(15, "AliExpress", "transaction@notice.aliexpress.com", "Tu pedido ha salido del almac\u00E9n", "aliexpress_shipping", "ali_887", 635, "Hoy \u00B7 10:35"),
+    EmailMessage(16, "Guarder\u00EDa", "comunicaciones@guarderia-demo.es", "Men\u00FA semanal", "nursery_menu", "menu_week_36", 660, "Hoy \u00B7 11:00"),
+    EmailMessage(17, "Seguro Hogar", "clientes@seguro-demo.es", "Renovaci\u00F3n de su p\u00F3liza", "insurance_renewal", "policy_2026", 690, "Hoy \u00B7 11:30"),
+    EmailMessage(18, "Bolet\u00EDn Tecnolog\u00EDa", "newsletter@tecnologia-demo.es", "Resumen semanal de tecnolog\u00EDa", "tech_newsletter", "tech_week_36", 720, "Hoy \u00B7 12:00")
 )
 
 private object DetectionEngine {
@@ -181,16 +180,16 @@ private object DetectionEngine {
                 "Remitente",
                 when { exactTechnicalSender -> 20; sameLogicalSender -> 12; else -> 0 },
                 20,
-                when { exactTechnicalSender -> "Misma direcci贸n t茅cnica"; sameLogicalSender -> "Mismo emisor l贸gico con direcciones t茅cnicas distintas"; else -> "Remitentes distintos" }
+                when { exactTechnicalSender -> "Misma direcci\u00F3n t\u00E9cnica"; sameLogicalSender -> "Mismo emisor l\u00F3gico con direcciones t\u00E9cnicas distintas"; else -> "Remitentes distintos" }
             ),
             DetectionSignal(
                 "Asunto",
                 when { exactSubject -> 30; similarSubject -> 15; else -> 0 },
                 30,
-                when { exactSubject -> "Asunto normalizado id茅ntico"; similarSubject -> "Asuntos parcialmente similares"; else -> "Asuntos diferentes" }
+                when { exactSubject -> "Asunto normalizado id\u00E9ntico"; similarSubject -> "Asuntos parcialmente similares"; else -> "Asuntos diferentes" }
             ),
             DetectionSignal("Contenido", if (sameContent) 20 else 0, 20, if (sameContent) "Mismo contenido o plantilla" else "Contenido diferente"),
-            DetectionSignal("Evento o hilo", if (sameEvent) 20 else 0, 20, if (sameEvent) "Mismo evento, operaci贸n o serie" else "Sin evento com煤n identificado"),
+            DetectionSignal("Evento o hilo", if (sameEvent) 20 else 0, 20, if (sameEvent) "Mismo evento, operaci\u00F3n o serie" else "Sin evento com\u00FAn identificado"),
             DetectionSignal(
                 "Proximidad temporal",
                 when { minuteDistance <= 15 -> 10; minuteDistance <= 1_440 -> 5; else -> 0 },
@@ -214,9 +213,9 @@ private object DetectionEngine {
             score = score,
             signals = signals,
             explanation = if (type == MatchType.STRONG) {
-                "Duplicado fuerte: coincide la direcci贸n t茅cnica, el asunto normalizado y otras se帽ales ($reasons)."
+                "Duplicado fuerte: coincide la direcci\u00F3n t\u00E9cnica, el asunto normalizado y otras se\u00F1ales ($reasons)."
             } else {
-                "Correos relacionados por $reasons. Requieren revisi贸n antes de tratarlos como duplicados."
+                "Correos relacionados por $reasons. Requieren revisi\u00F3n antes de tratarlos como duplicados."
             }
         )
     }
@@ -319,7 +318,7 @@ private fun DetectorApp() {
 @Composable
 private fun Header() {
     Box(
-        Modifier.padding(start = 18.dp, top = 14.dp, end = 18.dp, bottom = 10.dp)
+        Modifier.padding(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 10.dp)
             .fillMaxWidth().clip(RoundedCornerShape(24.dp))
             .background(Brush.linearGradient(listOf(Blue950, Blue800, Blue600)))
     ) {
@@ -327,16 +326,25 @@ private fun Header() {
             Modifier.align(Alignment.TopEnd).offset(x = 42.dp, y = (-42).dp).size(145.dp)
                 .background(Color.White.copy(alpha = 0.08f), CircleShape)
         )
-        Column(Modifier.padding(horizontal = 18.dp, vertical = 17.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(7.dp).background(Color(0xFF7FD4FF), CircleShape))
-                Spacer(Modifier.width(8.dp))
-                Text("DETECCI脫N LOCAL ACTIVA", color = Color(0xFFC8E4F6), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp)
+        Column(Modifier.padding(horizontal = 18.dp, vertical = 18.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(7.dp).background(Color(0xFF7FD4FF), CircleShape))
+                    Spacer(Modifier.width(8.dp))
+                    Text("MONITORIZACI\u00D3N ACTIVA", color = Color(0xFFD3E9F8), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp)
+                }
+                Surface(color = Color.White.copy(alpha = 0.10f), shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f))) {
+                    Row(Modifier.padding(horizontal = 11.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(7.dp).background(Color(0xFF73DDB5), CircleShape))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Activo", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
-            Spacer(Modifier.height(8.dp))
-            Text("Detector de correos", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(6.dp))
-            Text("v0.7 路 ${demoEmails.size} correos de demostraci贸n", color = Color(0xFFD6E9F7), fontSize = 12.sp)
+            Spacer(Modifier.height(10.dp))
+            Text("Detector de correos", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.height(4.dp))
+            Text("\u00DAltima revisi\u00F3n \u00B7 Hoy 08:00", color = Color(0xFFD6E9F7), fontSize = 12.sp)
         }
     }
 }
@@ -350,10 +358,38 @@ private fun SummaryScreen(reviewed: SnapshotStateMap<String, Boolean>, onCase: (
         contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        item { SyncCard(detectedCases.count { reviewed[it.id] != true }) }
         item { KpiRow(demoEmails.size, strong, related) }
-        item { SectionHeader("Casos recientes", "Ordenados por puntuaci贸n", "Ver todos", onAll) }
+        item { SectionHeader("Casos recientes", "Prioridad de revisi\u00F3n", "Ver todos", onAll) }
         items(detectedCases.take(3), key = { it.id }) { case ->
             CaseCard(case, reviewed[case.id] == true, true) { onCase(case) }
+        }
+    }
+}
+
+@Composable
+private fun SyncCard(pending: Int) {
+    Surface(
+        Modifier.fillMaxWidth(),
+        color = SurfaceWhite.copy(alpha = 0.76f),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, BorderBlue)
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(pending.toString(), color = Blue950, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                Spacer(Modifier.width(4.dp))
+                Text("casos requieren revisi\u00F3n prioritaria", color = TextSecondary, fontSize = 11.sp)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(7.dp).background(Color(0xFF69C7A5), CircleShape))
+                Spacer(Modifier.width(5.dp))
+                Text("Sincronizado", color = Success, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+            }
         }
     }
 }
@@ -376,7 +412,7 @@ private fun CasesScreen(
         contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item { SectionHeader("Bandeja de revisi贸n", "${visible.size} casos visibles") }
+        item { SectionHeader("Bandeja de revisi\u00F3n", "${visible.size} casos visibles") }
         item { FilterRow(filter, onFilter) }
         if (visible.isEmpty()) item { EmptyCard() }
         else items(visible, key = { it.id }) { case -> CaseCard(case, reviewed[case.id] == true, false) { onCase(case) } }
@@ -390,29 +426,33 @@ private fun SettingsScreen() {
         contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        item { SectionHeader("Ajustes", "Configuraci贸n del detector") }
-        item { InfoCard("Versi贸n", "Detector de correos v0.7 operativa. Interfaz Android creada con Jetpack Compose.") }
-        item { InfoCard("Motor de detecci贸n", "Compara cada pareja mediante cinco se帽ales: remitente, asunto, contenido, evento o hilo y proximidad temporal.") }
-        item { InfoCard("Privacidad", "Los 18 mensajes son simulados. Esta versi贸n no accede a Gmail, Outlook ni a buzones corporativos.") }
-        item { InfoCard("Pr贸xima integraci贸n", "El motor local queda preparado para sustituir los datos simulados por mensajes obtenidos mediante una conexi贸n autorizada.") }
+        item { SectionHeader("Ajustes", "Configuraci\u00F3n del detector") }
+        item { InfoCard("Versi\u00F3n", "Detector de correos v0.7 operativa. Interfaz Android creada con Jetpack Compose.") }
+        item { InfoCard("Motor de detecci\u00F3n", "Compara cada pareja mediante cinco se\u00F1ales: remitente, asunto, contenido, evento o hilo y proximidad temporal.") }
+        item { InfoCard("Privacidad", "Los 18 mensajes son simulados. Esta versi\u00F3n no accede a Gmail, Outlook ni a buzones corporativos.") }
+        item { InfoCard("Pr\u00F3xima integraci\u00F3n", "El motor local queda preparado para sustituir los datos simulados por mensajes obtenidos mediante una conexi\u00F3n autorizada.") }
     }
 }
 
 @Composable
 private fun KpiRow(analyzed: Int, strong: Int, related: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        KpiCard(analyzed.toString(), "Analizados", Modifier.weight(1f))
-        KpiCard(strong.toString(), "Duplicados", Modifier.weight(1f))
-        KpiCard(related.toString(), "Relacionados", Modifier.weight(1f))
+        KpiCard(analyzed.toString(), "Analizados", Icons.Outlined.Email, Modifier.weight(1f))
+        KpiCard(strong.toString(), "Duplicados", Icons.Outlined.ContentCopy, Modifier.weight(1f))
+        KpiCard(related.toString(), "Relacionados", Icons.Outlined.SwapHoriz, Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun KpiCard(number: String, label: String, modifier: Modifier) {
-    Surface(modifier, color = SurfaceWhite.copy(alpha = 0.92f), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, BorderBlue), shadowElevation = 2.dp) {
-        Column(Modifier.padding(horizontal = 8.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(number, color = Blue900, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
-            Spacer(Modifier.height(4.dp))
+private fun KpiCard(number: String, label: String, icon: ImageVector, modifier: Modifier) {
+    Surface(modifier, color = SurfaceWhite.copy(alpha = 0.94f), shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, BorderBlue), shadowElevation = 2.dp) {
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 13.dp)) {
+            Box(Modifier.size(30.dp).background(Blue100, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = Blue800, modifier = Modifier.size(16.dp))
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(number, color = Blue950, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.height(2.dp))
             Text(label, color = TextSecondary, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
@@ -453,26 +493,26 @@ private fun CaseCard(case: DetectionCase, reviewed: Boolean, compact: Boolean, o
     Surface(
         Modifier.fillMaxWidth().clickable(onClick = onClick),
         color = SurfaceWhite.copy(alpha = 0.95f),
-        shape = RoundedCornerShape(17.dp),
+        shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, BorderBlue),
         shadowElevation = 2.dp
     ) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-            Box(Modifier.width(3.dp).fillMaxHeight().background(Blue500.copy(alpha = 0.7f)))
-            Column(Modifier.weight(1f).padding(start = 12.dp, top = 12.dp, end = 14.dp, bottom = 12.dp)) {
+            Box(Modifier.width(4.dp).fillMaxHeight().background(Color(0xFF79C6E7)))
+            Column(Modifier.weight(1f).padding(start = 13.dp, top = 14.dp, end = 15.dp, bottom = 14.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     StatusBadge(case.type, reviewed)
-                    Text("${case.score}/100", color = Blue700, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("${case.score}% \u00B7 2 mensajes", color = Color(0xFF8190A2), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(case.first.logicalSender, color = Blue700, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(2.dp))
                 Text(case.first.subject, color = Blue950, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text("鈫� ${case.second.subject}", color = TextSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (!compact) Text("\u2194 ${case.second.subject}", color = TextSecondary, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(7.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("2 correos", color = Color(0xFF8795A7), fontSize = 10.sp)
-                    if (!compact) Text(if (reviewed) "Revisado" else "Ver explicaci贸n", color = if (reviewed) Success else TextSecondary, fontSize = 10.sp)
+                    Text(case.first.moment, color = Color(0xFF8795A7), fontSize = 10.sp)
+                    if (!compact) Text(if (reviewed) "Revisado" else "Ver explicaci\u00F3n", color = if (reviewed) Success else TextSecondary, fontSize = 10.sp)
                 }
             }
         }
@@ -511,7 +551,7 @@ private fun DetailSheet(case: DetectionCase, reviewed: Boolean, onDismiss: () ->
             item { EmailBlock("Correo 1", case.first) }
             item { EmailBlock("Correo 2", case.second) }
             item { HorizontalDivider(color = BorderBlue) }
-            item { Text("Cinco se帽ales analizadas", color = Blue900, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold) }
+            item { Text("Cinco se\u00F1ales analizadas", color = Blue900, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold) }
             items(case.signals) { signal -> SignalRow(signal) }
             item {
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -541,7 +581,7 @@ private fun EmailBlock(title: String, email: EmailMessage) {
 private fun SignalRow(signal: DetectionSignal) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
         Column(Modifier.weight(1f)) {
-            Text((if (signal.matched) "鉁� " else "鈥� ") + signal.name, color = if (signal.matched) Success else TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text((if (signal.matched) "\u2713 " else "\u2014 ") + signal.name, color = if (signal.matched) Success else TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text(signal.detail, color = TextSecondary, fontSize = 10.sp)
         }
         Text("${signal.points}/${signal.maximum}", color = if (signal.matched) Blue700 else TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
@@ -568,21 +608,39 @@ private fun EmptyCard() {
 
 @Composable
 private fun BottomNavigation(current: AppSection, onSelected: (AppSection) -> Unit) {
-    NavigationBar(containerColor = SurfaceSoft.copy(alpha = 0.98f), tonalElevation = 6.dp) {
-        AppSection.entries.forEach { section ->
-            NavigationBarItem(
-                selected = current == section,
-                onClick = { onSelected(section) },
-                icon = { Icon(section.icon, contentDescription = section.label) },
-                label = { Text(section.label, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Blue800,
-                    selectedTextColor = Blue800,
-                    indicatorColor = Blue100,
-                    unselectedIconColor = TextSecondary,
-                    unselectedTextColor = TextSecondary
-                )
-            )
+    Column(Modifier.fillMaxWidth().background(SurfaceSoft.copy(alpha = 0.98f))) {
+        HorizontalDivider(color = BorderBlue, thickness = 1.dp)
+        Row(
+            Modifier.fillMaxWidth().height(68.dp).padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            AppSection.entries.forEach { section ->
+                val selected = current == section
+                Column(
+                    Modifier.weight(1f).fillMaxHeight()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (selected) Blue100 else Color.Transparent)
+                        .clickable { onSelected(section) }
+                        .padding(vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        section.icon,
+                        contentDescription = section.label,
+                        tint = if (selected) Blue800 else Color(0xFF8A99AA),
+                        modifier = Modifier.size(19.dp)
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        section.label,
+                        color = if (selected) Blue800 else Color(0xFF7F8FA1),
+                        fontSize = 9.sp,
+                        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold
+                    )
+                }
+            }
         }
     }
 }
