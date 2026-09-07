@@ -1,0 +1,8 @@
+- La aplicación Android activa está dentro de app/.
+- El código principal está en app/src/main/java/com/example/detectorcorreos/MainActivity.kt.
+- El Gradle que configura la aplicación es app/build.gradle.kts.
+- No modificar los archivos antiguos de implementación XML situados en la raíz salvo petición expresa.
+- Mantener los textos y archivos en UTF-8 para evitar errores con acentos.
+- Aumentar versionCode cuando se genere una nueva APK instalable.
+- No añadir claves, contraseñas, tokens ni archivos .jks al repositorio.
+- Antes de entregar cambios, revisar git diff y comprobar la compilación disponible.
